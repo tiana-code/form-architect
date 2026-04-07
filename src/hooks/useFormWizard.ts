@@ -17,6 +17,10 @@ export function useFormWizard<T extends FieldValues>({
                                                          steps,
                                                          defaultValues,
                                                      }: UseFormWizardOptions<T>): UseFormWizardReturn<T> {
+    if (steps.length === 0) {
+        throw new Error('useFormWizard: steps array must not be empty');
+    }
+
     const form = useForm<T>({defaultValues, mode: 'onTouched'});
 
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -24,7 +28,7 @@ export function useFormWizard<T extends FieldValues>({
     const [completedStepsVersion, setCompletedStepsVersion] = useState(0);
 
     const totalSteps = steps.length;
-    const currentStep = steps[currentStepIndex] ?? steps[0];
+    const currentStep = steps[currentStepIndex];
 
     const wizardState = useMemo<WizardState>(() => {
         void completedStepsVersion;
@@ -34,7 +38,9 @@ export function useFormWizard<T extends FieldValues>({
             isFirstStep: currentStepIndex === 0,
             isLastStep: currentStepIndex === totalSteps - 1,
             completedSteps: new Set(completedStepsRef.current),
-            progress: totalSteps > 0 ? Math.round((currentStepIndex / totalSteps) * 100) : 0,
+            progress: totalSteps > 1
+                ? Math.round((currentStepIndex / (totalSteps - 1)) * 100)
+                : 100,
         };
     }, [currentStepIndex, totalSteps, completedStepsVersion]);
 
@@ -43,7 +49,7 @@ export function useFormWizard<T extends FieldValues>({
             const shouldValidate = options.validate !== false;
 
             if (shouldValidate) {
-                const fields = currentStep?.fields ?? [];
+                const fields = currentStep.fields;
                 const valid = await form.trigger(fields as Parameters<typeof form.trigger>[0]);
                 if (!valid) return false;
             }

@@ -1,6 +1,6 @@
-import React from 'react';
+import {useMemo} from 'react';
 import {useFormContext, useWatch} from 'react-hook-form';
-import type {FieldCondition, ConditionOperator, ConditionalFieldProps} from '../types';
+import type {ConditionOperator, ConditionalFieldProps} from '../types';
 
 function evaluate(operator: ConditionOperator, fieldValue: unknown, testValue: unknown): boolean {
     switch (operator) {
@@ -39,45 +39,6 @@ function evaluate(operator: ConditionOperator, fieldValue: unknown, testValue: u
     }
 }
 
-function useSatisfied(condition: FieldCondition): boolean {
-    const formValues = useWatch({name: condition.watchField});
-    return evaluate(condition.operator, formValues, condition.value);
-}
-
-function SingleCondition({
-                             condition,
-                             allOf,
-                             children,
-                             fallback,
-                         }: {
-    condition: FieldCondition;
-    allOf: boolean;
-    children: React.ReactNode;
-    fallback: React.ReactNode;
-}) {
-    const satisfied = useSatisfied(condition);
-    void allOf;
-    return <>{satisfied ? children : fallback}</>;
-}
-
-function MultiCondition({
-                            conditions,
-                            allOf,
-                            children,
-                            fallback,
-                        }: {
-    conditions: FieldCondition[];
-    allOf: boolean;
-    children: React.ReactNode;
-    fallback: React.ReactNode;
-}) {
-    const results = conditions.map((c) => {
-        return useSatisfied(c);
-    });
-    const satisfied = allOf ? results.every(Boolean) : results.some(Boolean);
-    return <>{satisfied ? children : fallback}</>;
-}
-
 export function ConditionalField({
                                      condition,
                                      allOf = true,
@@ -86,25 +47,27 @@ export function ConditionalField({
                                  }: ConditionalFieldProps) {
     useFormContext();
 
-    if (Array.isArray(condition)) {
-        if (condition.length === 0) return <>{children}</>;
-        if (condition.length === 1) {
-            return (
-                <SingleCondition condition={condition[0]} allOf={allOf} fallback={fallback}>
-                    {children}
-                </SingleCondition>
-            );
-        }
-        return (
-            <MultiCondition conditions={condition} allOf={allOf} fallback={fallback}>
-                {children}
-            </MultiCondition>
-        );
-    }
-
-    return (
-        <SingleCondition condition={condition} allOf={allOf} fallback={fallback}>
-            {children}
-        </SingleCondition>
+    const conditions = useMemo(
+        () => (Array.isArray(condition) ? condition : [condition]),
+        [condition]
     );
+
+    const watchFields = useMemo(
+        () => conditions.map((c) => c.watchField),
+        [conditions]
+    );
+
+    const values = useWatch({name: watchFields});
+
+    if (conditions.length === 0) return <>{children}</>;
+
+    const fieldValues = Array.isArray(values) ? values : [values];
+
+    const results = conditions.map((c, i) =>
+        evaluate(c.operator, fieldValues[i], c.value)
+    );
+
+    const satisfied = allOf ? results.every(Boolean) : results.some(Boolean);
+
+    return <>{satisfied ? children : fallback}</>;
 }
