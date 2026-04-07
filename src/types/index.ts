@@ -1,10 +1,10 @@
-import type {FieldValues, UseFormReturn, RegisterOptions} from 'react-hook-form';
+import type {FieldValues, UseFormReturn, RegisterOptions, Path, DefaultValues} from 'react-hook-form';
 
-export interface StepConfig {
+export interface StepConfig<T extends FieldValues = FieldValues> {
     id: string;
     title: string;
     description?: string;
-    fields: string[];
+    fields: Path<T>[];
 }
 
 export type ConditionOperator =
@@ -18,14 +18,15 @@ export type ConditionOperator =
     | 'truthy'
     | 'falsy';
 
-export interface FieldCondition {
-    watchField: string;
+export interface FieldCondition<T extends FieldValues = FieldValues> {
+    watchField: Path<T>;
     operator: ConditionOperator;
     value?: unknown;
 }
 
 export type AsyncValidatorFn<T = unknown> = (
-    value: T
+    value: T,
+    signal: AbortSignal
 ) => Promise<true | string>;
 
 export interface AsyncValidationState {
@@ -50,8 +51,8 @@ export interface WizardState {
 export interface UseFormWizardReturn<T extends FieldValues> {
     form: UseFormReturn<T>;
     wizardState: WizardState;
-    steps: StepConfig[];
-    currentStep: StepConfig;
+    steps: StepConfig<T>[];
+    currentStep: StepConfig<T>;
     next: (options?: WizardNavigationOptions) => Promise<boolean>;
     previous: () => void;
     goTo: (index: number) => void;
@@ -62,30 +63,24 @@ export interface UseFormWizardReturn<T extends FieldValues> {
 }
 
 export interface FormWizardProps<T extends FieldValues> {
-    steps: StepConfig[];
-    defaultValues?: Partial<T>;
+    steps: StepConfig<T>[];
+    defaultValues?: DefaultValues<T>;
     onSubmit: (data: T) => void | Promise<void>;
     children: (ctx: UseFormWizardReturn<T>) => React.ReactNode;
     className?: string;
 }
 
-export interface FormStepProps {
+export interface FormStepProps extends React.HTMLAttributes<HTMLElement> {
     title?: string;
     description?: string;
     children: React.ReactNode;
-    className?: string;
 }
 
 export interface ConditionalFieldProps {
     condition: FieldCondition | FieldCondition[];
-    /**
-     * When true, all conditions must be satisfied (AND)
-     * When false, any condition is sufficient (OR). Default: true
-     */
     allOf?: boolean;
     children: React.ReactNode;
-    /** Rendered when the condition is not met. Default: null */
     fallback?: React.ReactNode;
 }
 
-export type {FieldValues, RegisterOptions};
+export type {FieldValues, RegisterOptions, Path, DefaultValues};

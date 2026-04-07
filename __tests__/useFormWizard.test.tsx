@@ -3,18 +3,18 @@ import {renderHook, act} from '@testing-library/react';
 import {useFormWizard} from '../src';
 import type {StepConfig} from '../src';
 
-const steps: StepConfig[] = [
-    {id: 'step1', title: 'Personal Info', fields: ['name', 'email']},
-    {id: 'step2', title: 'Address', fields: ['city', 'zip']},
-    {id: 'step3', title: 'Review', fields: []},
-];
-
 interface FormData {
     name: string;
     email: string;
     city: string;
     zip: string;
 }
+
+const steps: StepConfig<FormData>[] = [
+    {id: 'step1', title: 'Personal Info', fields: ['name', 'email']},
+    {id: 'step2', title: 'Address', fields: ['city', 'zip']},
+    {id: 'step3', title: 'Review', fields: []},
+];
 
 describe('useFormWizard', () => {
     it('starts at step 0 with correct initial state', () => {

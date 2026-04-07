@@ -1,6 +1,7 @@
 import {useCallback, useMemo, useRef, useState} from 'react';
 import {useForm} from 'react-hook-form';
-import type {FieldValues, DefaultValues} from 'react-hook-form';
+import type {FieldValues} from 'react-hook-form';
+import type {DefaultValues} from '../types';
 import type {
     StepConfig,
     WizardState,
@@ -9,7 +10,7 @@ import type {
 } from '../types';
 
 interface UseFormWizardOptions<T extends FieldValues> {
-    steps: StepConfig[];
+    steps: StepConfig<T>[];
     defaultValues?: DefaultValues<T>;
 }
 

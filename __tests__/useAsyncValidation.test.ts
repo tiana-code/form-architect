@@ -72,19 +72,19 @@ describe('useAsyncValidation', () => {
         expect(result.current.state.isPending).toBe(false);
     });
 
-    it('calls validator with the provided value', async () => {
-        const validator = vi.fn(async (_v: string) => true as const);
+    it('calls validator with value and abort signal', async () => {
+        const validator = vi.fn(async (_v: string, _signal: AbortSignal) => true as const);
         const {result} = renderHook(() => useAsyncValidation(validator, 0));
 
         await act(async () => {
             await result.current.validate('test-value');
         });
 
-        expect(validator).toHaveBeenCalledWith('test-value');
+        expect(validator).toHaveBeenCalledWith('test-value', expect.any(AbortSignal));
     });
 
     it('debounces rapid calls and only executes the last one', async () => {
-        const validator = vi.fn(async (_v: string) => true as const);
+        const validator = vi.fn(async (_v: string, _signal: AbortSignal) => true as const);
         const {result} = renderHook(() => useAsyncValidation(validator, 50));
 
         act(() => {
@@ -96,6 +96,6 @@ describe('useAsyncValidation', () => {
         await waitFor(() => expect(result.current.state.isValid).toBe(true));
 
         expect(validator).toHaveBeenCalledTimes(1);
-        expect(validator).toHaveBeenCalledWith('abc');
+        expect(validator).toHaveBeenCalledWith('abc', expect.any(AbortSignal));
     });
 });

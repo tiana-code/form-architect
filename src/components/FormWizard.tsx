@@ -1,5 +1,5 @@
 import {FormProvider} from 'react-hook-form';
-import type {DefaultValues, FieldValues} from 'react-hook-form';
+import type {FieldValues} from 'react-hook-form';
 import {useFormWizard} from '../hooks/useFormWizard.js';
 import type {FormWizardProps} from '../types';
 
@@ -10,7 +10,7 @@ export function FormWizard<T extends FieldValues>({
                                                       children,
                                                       className,
                                                   }: FormWizardProps<T>) {
-    const ctx = useFormWizard<T>({steps, defaultValues: defaultValues as DefaultValues<T> | undefined});
+    const ctx = useFormWizard<T>({steps, defaultValues});
 
     return (
         <FormProvider {...ctx.form}>

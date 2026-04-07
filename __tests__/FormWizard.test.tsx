@@ -9,7 +9,7 @@ interface TestData {
     email: string;
 }
 
-const steps: StepConfig[] = [
+const steps: StepConfig<TestData>[] = [
     {id: 's1', title: 'Step 1', fields: ['name']},
     {id: 's2', title: 'Step 2', fields: ['email']},
 ];

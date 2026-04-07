@@ -19,4 +19,6 @@ export type {
     ConditionalFieldProps,
     FieldValues,
     RegisterOptions,
+    Path,
+    DefaultValues,
 } from './types/index.js';
