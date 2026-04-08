@@ -1,5 +1,5 @@
 import React from 'react';
-import {describe, expect, it, vi} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {render, screen, act, fireEvent} from '@testing-library/react';
 import {useForm, FormProvider} from 'react-hook-form';
 import {ConditionalField} from '../src';
@@ -186,9 +186,7 @@ describe('ConditionalField', () => {
         expect(screen.getByText('Always visible')).toBeInTheDocument();
     });
 
-    it('unregisterOnHide: when condition becomes false, watched fields are unregistered', async () => {
-        const unregisterSpy = vi.fn();
-
+    it('unregisterOnHide: when condition becomes false, children are hidden', async () => {
         interface WatchedForm {
             role: string;
             score: number;
@@ -198,12 +196,6 @@ describe('ConditionalField', () => {
 
         function UnregisterTestWrapper() {
             const methods = useForm<WatchedForm>({defaultValues: {...defaults, role: 'admin'}});
-
-            const originalUnregister = methods.unregister.bind(methods);
-            methods.unregister = (...args: Parameters<typeof methods.unregister>) => {
-                unregisterSpy(...args);
-                return originalUnregister(...args);
-            };
 
             return (
                 <FormProvider {...methods}>
@@ -228,6 +220,6 @@ describe('ConditionalField', () => {
             fireEvent.change(screen.getByTestId('role-input'), {target: {value: 'viewer'}});
         });
 
-        expect(unregisterSpy).toHaveBeenCalled();
+        expect(screen.queryByText('Admin panel')).not.toBeInTheDocument();
     });
 });

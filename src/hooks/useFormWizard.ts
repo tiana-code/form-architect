@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useForm} from 'react-hook-form';
 import type {FieldValues} from 'react-hook-form';
 import type {
@@ -27,32 +27,31 @@ export function useFormWizard<T extends FieldValues>({
     });
 
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
-    const completedStepsRef = useRef<Set<number>>(new Set<number>());
-    const [completedStepsVersion, setCompletedStepsVersion] = useState(0);
+    const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
     const totalSteps = steps.length;
     const currentStep = steps[currentStepIndex] as StepConfig<T>;
 
     const onStepChangeRef = useRef(onStepChange);
-    onStepChangeRef.current = onStepChange;
+    useEffect(() => {
+        onStepChangeRef.current = onStepChange;
+    }, [onStepChange]);
 
     const wizardState = useMemo<WizardState>(() => {
-        void completedStepsVersion;
-        const completedSize = completedStepsRef.current.size;
         return {
             currentStepIndex,
             totalSteps,
             isFirstStep: currentStepIndex === 0,
             isLastStep: currentStepIndex === totalSteps - 1,
-            completedSteps: new Set(completedStepsRef.current),
+            completedSteps: new Set(completedSteps),
             progress: totalSteps > 1
                 ? Math.round((currentStepIndex / (totalSteps - 1)) * 100)
                 : 100,
             completionProgress: totalSteps > 0
-                ? Math.round((completedSize / totalSteps) * 100)
+                ? Math.round((completedSteps.size / totalSteps) * 100)
                 : 0,
         };
-    }, [currentStepIndex, totalSteps, completedStepsVersion]);
+    }, [currentStepIndex, totalSteps, completedSteps]);
 
     const next = useCallback(
         async (options: WizardNavigationOptions = {}): Promise<boolean> => {
@@ -64,8 +63,7 @@ export function useFormWizard<T extends FieldValues>({
                 if (!valid) return false;
             }
 
-            completedStepsRef.current.add(currentStepIndex);
-            setCompletedStepsVersion((v) => v + 1);
+            setCompletedSteps((prev) => new Set(prev).add(currentStepIndex));
             const nextIndex = Math.min(currentStepIndex + 1, totalSteps - 1);
             onStepChangeRef.current?.(currentStepIndex, nextIndex);
             setCurrentStepIndex(nextIndex);
@@ -100,8 +98,7 @@ export function useFormWizard<T extends FieldValues>({
     const reset = useCallback(() => {
         form.reset(defaultValues as T | undefined);
         setCurrentStepIndex(0);
-        completedStepsRef.current = new Set<number>();
-        setCompletedStepsVersion((v) => v + 1);
+        setCompletedSteps(new Set());
     }, [form, defaultValues]);
 
     const handleSubmit = useCallback(
