@@ -1,4 +1,4 @@
-import {useMemo} from 'react';
+import {useEffect, useMemo, useRef} from 'react';
 import {useFormContext, useWatch} from 'react-hook-form';
 import type {ConditionOperator, ConditionalFieldProps} from '../types';
 
@@ -40,12 +40,13 @@ function evaluate(operator: ConditionOperator, fieldValue: unknown, testValue: u
 }
 
 export function ConditionalField({
-                                     condition,
-                                     allOf = true,
-                                     children,
-                                     fallback = null,
-                                 }: ConditionalFieldProps) {
-    useFormContext();
+    condition,
+    allOf = true,
+    children,
+    fallback = null,
+    unregisterOnHide = false,
+}: ConditionalFieldProps) {
+    const { unregister } = useFormContext();
 
     const conditions = useMemo(
         () => (Array.isArray(condition) ? condition : [condition]),
@@ -59,15 +60,22 @@ export function ConditionalField({
 
     const values = useWatch({name: watchFields});
 
-    if (conditions.length === 0) return <>{children}</>;
-
     const fieldValues = Array.isArray(values) ? values : [values];
 
-    const results = conditions.map((c, i) =>
-        evaluate(c.operator, fieldValues[i], c.value)
-    );
+    const results = conditions.length === 0
+        ? [true]
+        : conditions.map((c, i) => evaluate(c.operator, fieldValues[i], c.value));
 
     const satisfied = allOf ? results.every(Boolean) : results.some(Boolean);
+
+    const prevSatisfiedRef = useRef(satisfied);
+
+    useEffect(() => {
+        if (!satisfied && prevSatisfiedRef.current && unregisterOnHide) {
+            unregister(watchFields);
+        }
+        prevSatisfiedRef.current = satisfied;
+    }, [satisfied, unregisterOnHide, unregister, watchFields]);
 
     return <>{satisfied ? children : fallback}</>;
 }
