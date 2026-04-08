@@ -423,5 +423,4 @@ npm run build      # vite library build → dist/
 
 ## License
 
-[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) — Copyright (c) 2026 itiana.
-Free for non-commercial use with attribution. Commercial use requires a separate agreement.
+MIT — see [LICENSE](./LICENSE)
