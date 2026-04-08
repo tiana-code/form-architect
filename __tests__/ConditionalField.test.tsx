@@ -1,6 +1,6 @@
 import React from 'react';
-import {describe, expect, it} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, expect, it, vi} from 'vitest';
+import {render, screen, act, fireEvent} from '@testing-library/react';
 import {useForm, FormProvider} from 'react-hook-form';
 import {ConditionalField} from '../src';
 import type {FieldCondition} from '../src';
@@ -13,23 +13,30 @@ interface FormValues {
 }
 
 function TestWrapper({
-                         defaultValues,
-                         condition,
-                         allOf,
-                         fallback,
-                         children,
-                     }: {
+    defaultValues,
+    condition,
+    allOf,
+    fallback,
+    unregisterOnHide,
+    children,
+}: {
     defaultValues: FormValues;
     condition: FieldCondition | FieldCondition[];
     allOf?: boolean;
     fallback?: React.ReactNode;
+    unregisterOnHide?: boolean;
     children: React.ReactNode;
 }) {
     const methods = useForm<FormValues>({defaultValues});
     return (
         <FormProvider {...methods}>
             <form>
-                <ConditionalField condition={condition} allOf={allOf} fallback={fallback}>
+                <ConditionalField
+                    condition={condition}
+                    {...(allOf !== undefined ? {allOf} : {})}
+                    {...(fallback !== undefined ? {fallback} : {})}
+                    {...(unregisterOnHide !== undefined ? {unregisterOnHide} : {})}
+                >
                     {children}
                 </ConditionalField>
             </form>
@@ -177,5 +184,50 @@ describe('ConditionalField', () => {
             </TestWrapper>
         );
         expect(screen.getByText('Always visible')).toBeInTheDocument();
+    });
+
+    it('unregisterOnHide: when condition becomes false, watched fields are unregistered', async () => {
+        const unregisterSpy = vi.fn();
+
+        interface WatchedForm {
+            role: string;
+            score: number;
+            tags: string[];
+            active: boolean;
+        }
+
+        function UnregisterTestWrapper() {
+            const methods = useForm<WatchedForm>({defaultValues: {...defaults, role: 'admin'}});
+
+            const originalUnregister = methods.unregister.bind(methods);
+            methods.unregister = (...args: Parameters<typeof methods.unregister>) => {
+                unregisterSpy(...args);
+                return originalUnregister(...args);
+            };
+
+            return (
+                <FormProvider {...methods}>
+                    <form>
+                        <input {...methods.register('role')} data-testid="role-input" />
+                        <ConditionalField
+                            condition={{watchField: 'role', operator: 'eq', value: 'admin'}}
+                            unregisterOnHide={true}
+                        >
+                            <span>Admin panel</span>
+                        </ConditionalField>
+                    </form>
+                </FormProvider>
+            );
+        }
+
+        render(<UnregisterTestWrapper />);
+
+        expect(screen.getByText('Admin panel')).toBeInTheDocument();
+
+        await act(async () => {
+            fireEvent.change(screen.getByTestId('role-input'), {target: {value: 'viewer'}});
+        });
+
+        expect(unregisterSpy).toHaveBeenCalled();
     });
 });

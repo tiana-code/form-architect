@@ -67,21 +67,27 @@ describe('useFormWizard', () => {
         expect(result.current.wizardState.currentStepIndex).toBe(0);
     });
 
-    it('goTo navigates to any step index', () => {
+    it('goTo navigates to any step index', async () => {
         const {result} = renderHook(() =>
             useFormWizard<FormData>({steps})
         );
-        act(() => result.current.goTo(2));
+        await act(async () => {
+            await result.current.goTo(2);
+        });
         expect(result.current.wizardState.currentStepIndex).toBe(2);
     });
 
-    it('goTo clamps to valid range', () => {
+    it('goTo clamps to valid range', async () => {
         const {result} = renderHook(() =>
             useFormWizard<FormData>({steps})
         );
-        act(() => result.current.goTo(99));
+        await act(async () => {
+            await result.current.goTo(99);
+        });
         expect(result.current.wizardState.currentStepIndex).toBe(2);
-        act(() => result.current.goTo(-5));
+        await act(async () => {
+            await result.current.goTo(-5);
+        });
         expect(result.current.wizardState.currentStepIndex).toBe(0);
     });
 
@@ -89,18 +95,22 @@ describe('useFormWizard', () => {
         const {result} = renderHook(() =>
             useFormWizard<FormData>({steps})
         );
-        act(() => result.current.goTo(2));
+        await act(async () => {
+            await result.current.goTo(2);
+        });
         await act(async () => {
             await result.current.next({validate: false});
         });
         expect(result.current.wizardState.currentStepIndex).toBe(2);
     });
 
-    it('isLastStep is true on last step', () => {
+    it('isLastStep is true on last step', async () => {
         const {result} = renderHook(() =>
             useFormWizard<FormData>({steps})
         );
-        act(() => result.current.goTo(2));
+        await act(async () => {
+            await result.current.goTo(2);
+        });
         expect(result.current.wizardState.isLastStep).toBe(true);
     });
 
@@ -116,12 +126,14 @@ describe('useFormWizard', () => {
         expect(result.current.wizardState.completedSteps.size).toBe(0);
     });
 
-    it('currentStep reflects the active step config', () => {
+    it('currentStep reflects the active step config', async () => {
         const {result} = renderHook(() =>
             useFormWizard<FormData>({steps})
         );
         expect(result.current.currentStep.id).toBe('step1');
-        act(() => result.current.goTo(1));
+        await act(async () => {
+            await result.current.goTo(1);
+        });
         expect(result.current.currentStep.id).toBe('step2');
     });
 
@@ -140,5 +152,99 @@ describe('useFormWizard', () => {
         expect(onValid).toHaveBeenCalledWith(
             expect.objectContaining({name: 'Alice', email: 'a@b.com'})
         );
+    });
+
+    it('next() does not advance when current step has invalid required field', async () => {
+        interface StrictForm {
+            username: string;
+            bio: string;
+        }
+
+        const strictSteps: StepConfig<StrictForm>[] = [
+            {id: 's1', title: 'Step 1', fields: ['username']},
+            {id: 's2', title: 'Step 2', fields: ['bio']},
+        ];
+        const {result} = renderHook(() =>
+            useFormWizard<StrictForm>({
+                steps: strictSteps,
+                defaultValues: {username: '', bio: ''},
+            })
+        );
+
+        result.current.form.register('username', {required: 'Username is required'});
+
+        let advanced = false;
+        await act(async () => {
+            advanced = await result.current.next();
+        });
+
+        expect(advanced).toBe(false);
+        expect(result.current.wizardState.currentStepIndex).toBe(0);
+    });
+
+    it('goTo with validateCurrentStep: true blocks on invalid step', async () => {
+        interface StrictForm {
+            username: string;
+            bio: string;
+        }
+
+        const strictSteps: StepConfig<StrictForm>[] = [
+            {id: 's1', title: 'Step 1', fields: ['username']},
+            {id: 's2', title: 'Step 2', fields: ['bio']},
+        ];
+        const {result} = renderHook(() =>
+            useFormWizard<StrictForm>({
+                steps: strictSteps,
+                defaultValues: {username: '', bio: ''},
+            })
+        );
+
+        result.current.form.register('username', {required: 'Username is required'});
+
+        let jumped: boolean | void = false;
+        await act(async () => {
+            jumped = await result.current.goTo(1, {validateCurrentStep: true});
+        });
+
+        expect(jumped).toBe(false);
+        expect(result.current.wizardState.currentStepIndex).toBe(0);
+    });
+
+    it('onStepChange callback is called on navigation', async () => {
+        const onStepChange = vi.fn();
+        const {result} = renderHook(() =>
+            useFormWizard<FormData>({steps, onStepChange})
+        );
+
+        await act(async () => {
+            await result.current.next({validate: false});
+        });
+        expect(onStepChange).toHaveBeenCalledWith(0, 1);
+
+        act(() => result.current.previous());
+        expect(onStepChange).toHaveBeenCalledWith(1, 0);
+
+        await act(async () => {
+            await result.current.goTo(2);
+        });
+        expect(onStepChange).toHaveBeenCalledWith(0, 2);
+    });
+
+    it('completionProgress reflects completed steps', async () => {
+        const {result} = renderHook(() =>
+            useFormWizard<FormData>({steps})
+        );
+
+        expect(result.current.wizardState.completionProgress).toBe(0);
+
+        await act(async () => {
+            await result.current.next({validate: false});
+        });
+        expect(result.current.wizardState.completionProgress).toBe(33);
+
+        await act(async () => {
+            await result.current.next({validate: false});
+        });
+        expect(result.current.wizardState.completionProgress).toBe(67);
     });
 });

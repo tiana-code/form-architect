@@ -1,4 +1,4 @@
-import type {FieldValues, UseFormReturn, RegisterOptions, Path, DefaultValues} from 'react-hook-form';
+import type {FieldValues, UseFormReturn, RegisterOptions, Path, DefaultValues, UseFormProps} from 'react-hook-form';
 
 export interface StepConfig<T extends FieldValues = FieldValues> {
     id: string;
@@ -29,14 +29,24 @@ export type AsyncValidatorFn<T = unknown> = (
     signal: AbortSignal
 ) => Promise<true | string>;
 
+export type AsyncValidationResult =
+    | { status: 'valid' }
+    | { status: 'invalid'; message: string }
+    | { status: 'cancelled' };
+
 export interface AsyncValidationState {
     isPending: boolean;
+    result: AsyncValidationResult | null;
     error: string | null;
     isValid: boolean | null;
 }
 
 export interface WizardNavigationOptions {
     validate?: boolean;
+}
+
+export interface GoToOptions {
+    validateCurrentStep?: boolean;
 }
 
 export interface WizardState {
@@ -46,6 +56,7 @@ export interface WizardState {
     isLastStep: boolean;
     completedSteps: Set<number>;
     progress: number;
+    completionProgress: number;
 }
 
 export interface UseFormWizardReturn<T extends FieldValues> {
@@ -55,11 +66,18 @@ export interface UseFormWizardReturn<T extends FieldValues> {
     currentStep: StepConfig<T>;
     next: (options?: WizardNavigationOptions) => Promise<boolean>;
     previous: () => void;
-    goTo: (index: number) => void;
+    goTo: (index: number, options?: GoToOptions) => Promise<boolean>;
     reset: () => void;
     handleSubmit: (
         onValid: (data: T) => void | Promise<void>
     ) => (e?: React.BaseSyntheticEvent) => Promise<void>;
+}
+
+export interface UseFormWizardOptions<T extends FieldValues> {
+    steps: StepConfig<T>[];
+    defaultValues?: DefaultValues<T> | undefined;
+    formOptions?: Omit<UseFormProps<T>, 'defaultValues'> | undefined;
+    onStepChange?: ((from: number, to: number) => void) | undefined;
 }
 
 export interface FormWizardProps<T extends FieldValues> {
@@ -68,6 +86,8 @@ export interface FormWizardProps<T extends FieldValues> {
     onSubmit: (data: T) => void | Promise<void>;
     children: (ctx: UseFormWizardReturn<T>) => React.ReactNode;
     className?: string;
+    formOptions?: Omit<UseFormProps<T>, 'defaultValues'>;
+    onStepChange?: (from: number, to: number) => void;
 }
 
 export interface FormStepProps extends React.HTMLAttributes<HTMLElement> {
@@ -81,6 +101,7 @@ export interface ConditionalFieldProps {
     allOf?: boolean;
     children: React.ReactNode;
     fallback?: React.ReactNode;
+    unregisterOnHide?: boolean;
 }
 
-export type {FieldValues, RegisterOptions, Path, DefaultValues};
+export type {FieldValues, RegisterOptions, Path, DefaultValues, UseFormProps};

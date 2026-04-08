@@ -1,8 +1,8 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import type {AsyncValidationState, AsyncValidatorFn} from '../types';
+import type {AsyncValidationState, AsyncValidationResult, AsyncValidatorFn} from '../types';
 
 interface UseAsyncValidationReturn<T> {
-    validate: (value: T) => Promise<true | string>;
+    validate: (value: T) => Promise<AsyncValidationResult>;
     state: AsyncValidationState;
     reset: () => void;
 }
@@ -11,6 +11,7 @@ const DEFAULT_DEBOUNCE_MS = 300;
 
 const INITIAL_STATE: AsyncValidationState = {
     isPending: false,
+    result: null,
     error: null,
     isValid: null,
 };
@@ -22,7 +23,7 @@ export function useAsyncValidation<T>(
     const [state, setState] = useState<AsyncValidationState>(INITIAL_STATE);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const abortRef = useRef<AbortController | null>(null);
-    const pendingResolveRef = useRef<((v: true | string) => void) | null>(null);
+    const pendingResolveRef = useRef<((v: AsyncValidationResult) => void) | null>(null);
     const mountedRef = useRef(true);
 
     useEffect(() => {
@@ -30,7 +31,7 @@ export function useAsyncValidation<T>(
             mountedRef.current = false;
             if (debounceRef.current) clearTimeout(debounceRef.current);
             abortRef.current?.abort();
-            pendingResolveRef.current?.('Validation cancelled');
+            pendingResolveRef.current?.({status: 'cancelled'});
         };
     }, []);
 
@@ -41,18 +42,18 @@ export function useAsyncValidation<T>(
         }
         abortRef.current?.abort();
         abortRef.current = null;
-        pendingResolveRef.current?.('Validation cancelled');
+        pendingResolveRef.current?.({status: 'cancelled'});
         pendingResolveRef.current = null;
         setState(INITIAL_STATE);
     }, []);
 
     const validate = useCallback(
-        (value: T): Promise<true | string> => {
+        (value: T): Promise<AsyncValidationResult> => {
             if (debounceRef.current) clearTimeout(debounceRef.current);
             abortRef.current?.abort();
-            pendingResolveRef.current?.('Validation cancelled');
+            pendingResolveRef.current?.({status: 'cancelled'});
 
-            return new Promise<true | string>((resolve) => {
+            return new Promise<AsyncValidationResult>((resolve) => {
                 pendingResolveRef.current = resolve;
 
                 debounceRef.current = setTimeout(async () => {
@@ -60,29 +61,34 @@ export function useAsyncValidation<T>(
                     abortRef.current = controller;
 
                     if (!mountedRef.current) {
-                        resolve('Validation cancelled');
+                        resolve({status: 'cancelled'});
                         return;
                     }
-                    setState({isPending: true, error: null, isValid: null});
+                    setState({isPending: true, result: null, error: null, isValid: null});
 
                     try {
-                        const result = await validator(value, controller.signal);
+                        const outcome = await validator(value, controller.signal);
                         if (controller.signal.aborted || !mountedRef.current) return;
 
-                        if (result === true) {
-                            setState({isPending: false, error: null, isValid: true});
+                        if (outcome === true) {
+                            const result: AsyncValidationResult = {status: 'valid'};
+                            setState({isPending: false, result, error: null, isValid: true});
+                            pendingResolveRef.current = null;
+                            resolve(result);
                         } else {
-                            setState({isPending: false, error: result, isValid: false});
+                            const result: AsyncValidationResult = {status: 'invalid', message: outcome};
+                            setState({isPending: false, result, error: outcome, isValid: false});
+                            pendingResolveRef.current = null;
+                            resolve(result);
                         }
-                        pendingResolveRef.current = null;
-                        resolve(result);
                     } catch (err) {
                         if (controller.signal.aborted || !mountedRef.current) return;
                         const message =
                             err instanceof Error ? err.message : 'Validation failed';
-                        setState({isPending: false, error: message, isValid: false});
+                        const result: AsyncValidationResult = {status: 'invalid', message};
+                        setState({isPending: false, result, error: message, isValid: false});
                         pendingResolveRef.current = null;
-                        resolve(message);
+                        resolve(result);
                     }
                 }, debounceMs);
             });
