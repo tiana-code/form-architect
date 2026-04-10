@@ -1,12 +1,12 @@
 # @itiana/form-architect
 
-Multi-step form wizard library for React — composable, type-safe, and built on react-hook-form.
+Multi-step form wizard library for React - composable, type-safe, and built on react-hook-form.
 
 ---
 
 ## What Problem It Solves
 
-Single-page forms become hard to manage once they branch on user choices, require async field checks, or span more than a screen's worth of inputs. `@itiana/form-architect` gives you a structured wizard model — steps, per-step validation, conditional field rendering, and debounced async checks — without replacing react-hook-form's validation engine. Each step validates only its own registered fields before advancing, so users see errors at the right moment rather than all at once on submit.
+Single-page forms become hard to manage once they branch on user choices, require async field checks, or span more than a screen's worth of inputs. `@itiana/form-architect` gives you a structured wizard model - steps, per-step validation, conditional field rendering, and debounced async checks - without replacing react-hook-form's validation engine. Each step validates only its own registered fields before advancing, so users see errors at the right moment rather than all at once on submit.
 
 ---
 
@@ -20,9 +20,9 @@ Single-page forms become hard to manage once they branch on user choices, requir
 
 ## When NOT to Use
 
-- Single-step forms — react-hook-form alone is simpler
+- Single-step forms - react-hook-form alone is simpler
 - Forms that run as React Server Actions (RSC / Next.js server-side submit)
-- Dynamic field arrays (`useFieldArray`) — this library has no built-in field array support
+- Dynamic field arrays (`useFieldArray`) - this library has no built-in field array support
 - UIs that need to control the active step index from outside the wizard
 
 ---
@@ -72,7 +72,7 @@ export function CheckoutWizard() {
     try {
       await submitOrder(data);
     } catch (err) {
-      // handle submission error — show toast, set server error, etc.
+      // handle submission error - show toast, set server error, etc.
       console.error(err);
     }
   }
@@ -217,7 +217,7 @@ graph TD
     UFW --> Types
 ```
 
-`FormWizard` is a thin shell: it delegates all state to `useFormWizard`, which owns the step index and wraps react-hook-form. Components like `FormStep` and `ConditionalField` are structural primitives — they impose no validation logic of their own. The library sits entirely above react-hook-form's API surface, so every RHF feature (rules, context, `useWatch`, `useFormContext`) remains available inside the render prop.
+`FormWizard` is a thin shell: it delegates all state to `useFormWizard`, which owns the step index and wraps react-hook-form. Components like `FormStep` and `ConditionalField` are structural primitives - they impose no validation logic of their own. The library sits entirely above react-hook-form's API surface, so every RHF feature (rules, context, `useWatch`, `useFormContext`) remains available inside the render prop.
 
 ---
 
@@ -231,7 +231,7 @@ Steps with an empty `fields` array (e.g. a review step) advance without triggeri
 
 ### Hidden Field Policy
 
-`ConditionalField` accepts an `unregisterOnHide` boolean prop. When `true`, fields inside a hidden `ConditionalField` are unregistered from react-hook-form when they disappear, clearing their values and errors. When `false` (the default), values are preserved in the form state even while the field is hidden — useful when you want hidden values to survive a back-and-forward navigation without resetting.
+`ConditionalField` accepts an `unregisterOnHide` boolean prop. When `true`, fields inside a hidden `ConditionalField` are unregistered from react-hook-form when they disappear, clearing their values and errors. When `false` (the default), values are preserved in the form state even while the field is hidden - useful when you want hidden values to survive a back-and-forward navigation without resetting.
 
 ### Step Navigation
 
@@ -252,13 +252,13 @@ Root component. Provides a `FormProvider` context and renders a `<form>` element
 
 | Prop            | Type                                              | Required | Default   | Description                                        |
 |-----------------|---------------------------------------------------|----------|-----------|----------------------------------------------------|
-| `steps`         | `StepConfig<T>[]`                                 | yes      | —         | Ordered step definitions                           |
-| `defaultValues` | `DefaultValues<T>`                                | no       | —         | Initial form values passed to react-hook-form      |
-| `onSubmit`      | `(data: T) => void \| Promise<void>`              | yes      | —         | Called after final-step validation passes          |
-| `children`      | `(ctx: UseFormWizardReturn<T>) => ReactNode`       | yes      | —         | Render prop receiving the full wizard context      |
-| `className`     | `string`                                          | no       | —         | CSS class applied to the `<form>` element          |
-| `formOptions`   | `Omit<UseFormProps<T>, 'defaultValues'>`           | no       | —         | Extra options forwarded to `useForm` (e.g. `mode`) |
-| `onStepChange`  | `(from: number, to: number) => void`              | no       | —         | Fired after each successful step transition        |
+| `steps`         | `StepConfig<T>[]`                                 | yes      | -         | Ordered step definitions                           |
+| `defaultValues` | `DefaultValues<T>`                                | no       | -         | Initial form values passed to react-hook-form      |
+| `onSubmit`      | `(data: T) => void \| Promise<void>`              | yes      | -         | Called after final-step validation passes          |
+| `children`      | `(ctx: UseFormWizardReturn<T>) => ReactNode`       | yes      | -         | Render prop receiving the full wizard context      |
+| `className`     | `string`                                          | no       | -         | CSS class applied to the `<form>` element          |
+| `formOptions`   | `Omit<UseFormProps<T>, 'defaultValues'>`           | no       | -         | Extra options forwarded to `useForm` (e.g. `mode`) |
+| `onStepChange`  | `(from: number, to: number) => void`              | no       | -         | Fired after each successful step transition        |
 
 ### `FormStep`
 
@@ -276,10 +276,10 @@ Renders `children` only when the condition(s) evaluate to true against live watc
 
 | Prop             | Type                               | Required | Default | Description                                                        |
 |------------------|------------------------------------|----------|---------|--------------------------------------------------------------------|
-| `condition`      | `FieldCondition \| FieldCondition[]` | yes    | —       | One or more field conditions to evaluate                           |
+| `condition`      | `FieldCondition \| FieldCondition[]` | yes    | -       | One or more field conditions to evaluate                           |
 | `allOf`          | `boolean`                          | no       | `false` | When `true`, all conditions must pass. When `false`, any one suffices. |
-| `children`       | `ReactNode`                        | yes      | —       | Content shown when condition is met                                |
-| `fallback`       | `ReactNode`                        | no       | —       | Content shown when condition is not met                            |
+| `children`       | `ReactNode`                        | yes      | -       | Content shown when condition is met                                |
+| `fallback`       | `ReactNode`                        | no       | -       | Content shown when condition is not met                            |
 | `unregisterOnHide` | `boolean`                        | no       | `false` | Unregister fields from RHF when hidden, clearing their values      |
 
 **Supported operators:** `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `includes`, `truthy`, `falsy`.
@@ -364,7 +364,7 @@ type AsyncValidationResult =
 
 ## Accessibility
 
-`FormWizard` and `FormStep` are structural primitives — they render a `<form>` and `<section>` respectively but make no assumptions about your heading hierarchy, ARIA roles, or live regions. Consumers are responsible for:
+`FormWizard` and `FormStep` are structural primitives - they render a `<form>` and `<section>` respectively but make no assumptions about your heading hierarchy, ARIA roles, or live regions. Consumers are responsible for:
 
 - Associating `<label htmlFor>` with every input `id`
 - Adding `aria-describedby` to inputs when an error is present
@@ -394,11 +394,11 @@ import { FormWizard } from '@itiana/form-architect';
 
 ## Known Constraints
 
-- **React 19** — not verified. The library targets React 18.x.
-- **Field arrays** — `useFieldArray` is not integrated. Dynamic lists of fields require a custom solution.
-- **Server Actions** — `onSubmit` is a client callback. It cannot be a Next.js Server Action directly; wrap server calls inside `onSubmit` instead.
-- **Controlled step index** — the active step index is managed internally. External state cannot drive it; use `goTo` for programmatic navigation.
-- **No drag-and-drop step reordering** — step order is fixed at mount from the `steps` prop.
+- **React 19** - not verified. The library targets React 18.x.
+- **Field arrays** - `useFieldArray` is not integrated. Dynamic lists of fields require a custom solution.
+- **Server Actions** - `onSubmit` is a client callback. It cannot be a Next.js Server Action directly; wrap server calls inside `onSubmit` instead.
+- **Controlled step index** - the active step index is managed internally. External state cannot drive it; use `goTo` for programmatic navigation.
+- **No drag-and-drop step reordering** - step order is fixed at mount from the `steps` prop.
 
 ---
 
@@ -417,10 +417,10 @@ npm run build      # vite library build → dist/
 
 ## Release Status
 
-**0.1.0-alpha** — API is stabilising but not yet frozen. Minor versions may include breaking changes until `1.0.0`.
+**0.1.0-alpha** - API is stabilising but not yet frozen. Minor versions may include breaking changes until `1.0.0`.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](./LICENSE)
+MIT - see [LICENSE](./LICENSE)
