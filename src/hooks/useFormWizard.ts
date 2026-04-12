@@ -16,10 +16,6 @@ export function useFormWizard<T extends FieldValues>({
                                                          formOptions,
                                                          onStepChange,
                                                      }: UseFormWizardOptions<T>): UseFormWizardReturn<T> {
-    if (steps.length === 0) {
-        throw new Error('useFormWizard: steps array must not be empty');
-    }
-
     const form = useForm<T>({
         ...formOptions,
         ...(defaultValues !== undefined ? {defaultValues} : {}),
@@ -108,6 +104,10 @@ export function useFormWizard<T extends FieldValues>({
             }),
         [form]
     );
+
+    if (steps.length === 0) {
+        throw new Error('useFormWizard: steps array must not be empty');
+    }
 
     return {
         form,
