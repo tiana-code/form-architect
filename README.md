@@ -56,136 +56,54 @@ import type { StepConfig } from '@itiana/form-architect';
 
 interface CheckoutData {
   email: string;
-  shippingAddress: string;
   paymentMethod: 'card' | 'paypal';
   cardNumber?: string;
 }
 
 const steps: StepConfig<CheckoutData>[] = [
-  { id: 'contact',  title: 'Contact',  fields: ['email'] },
-  { id: 'shipping', title: 'Shipping', fields: ['shippingAddress'] },
-  { id: 'payment',  title: 'Payment',  fields: ['paymentMethod', 'cardNumber'] },
+  { id: 'contact', title: 'Contact', fields: ['email'] },
+  { id: 'payment', title: 'Payment', fields: ['paymentMethod', 'cardNumber'] },
 ];
 
 export function CheckoutWizard() {
-  async function handleSubmit(data: CheckoutData) {
-    try {
-      await submitOrder(data);
-    } catch (err) {
-      // handle submission error - show toast, set server error, etc.
-      console.error(err);
-    }
-  }
-
   return (
     <FormWizard<CheckoutData>
       steps={steps}
-      defaultValues={{ email: '', shippingAddress: '', paymentMethod: 'card' }}
-      onSubmit={handleSubmit}
-      onStepChange={(from, to) => analytics.track('wizard_step', { from, to })}
+      defaultValues={{ email: '', paymentMethod: 'card' }}
+      onSubmit={(data) => submitOrder(data)}
     >
-      {({ currentStep, wizardState, next, previous, form }) => {
-        const { formState: { errors, isSubmitting } } = form;
+      {({ currentStep, wizardState, next, previous, form }) => (
+        <>
+          {currentStep.id === 'contact' && (
+            <FormStep title="Contact">
+              <input {...form.register('email', { required: 'Email is required' })} />
+            </FormStep>
+          )}
 
-        return (
-          <>
-            <p aria-live="polite">
-              Step {wizardState.currentStepIndex + 1} of {wizardState.totalSteps}
-            </p>
+          {currentStep.id === 'payment' && (
+            <FormStep title="Payment">
+              <select {...form.register('paymentMethod')}>
+                <option value="card">Card</option>
+                <option value="paypal">PayPal</option>
+              </select>
 
-            {currentStep.id === 'contact' && (
-              <FormStep title="Contact details">
-                <div>
-                  <label htmlFor="email">Email address</label>
-                  <input
-                    id="email"
-                    type="email"
-                    aria-describedby={errors.email ? 'email-error' : undefined}
-                    {...form.register('email', {
-                      required: 'Email is required',
-                      pattern: { value: /\S+@\S+\.\S+/, message: 'Enter a valid email' },
-                    })}
-                  />
-                  {errors.email && (
-                    <span id="email-error" role="alert">
-                      {errors.email.message}
-                    </span>
-                  )}
-                </div>
-              </FormStep>
-            )}
+              <ConditionalField
+                condition={{ watchField: 'paymentMethod', operator: 'eq', value: 'card' }}
+                unregisterOnHide
+              >
+                <input {...form.register('cardNumber', { required: 'Card number required' })} />
+              </ConditionalField>
+            </FormStep>
+          )}
 
-            {currentStep.id === 'shipping' && (
-              <FormStep title="Shipping address">
-                <div>
-                  <label htmlFor="shippingAddress">Street address</label>
-                  <input
-                    id="shippingAddress"
-                    aria-describedby={errors.shippingAddress ? 'shipping-error' : undefined}
-                    {...form.register('shippingAddress', { required: 'Address is required' })}
-                  />
-                  {errors.shippingAddress && (
-                    <span id="shipping-error" role="alert">
-                      {errors.shippingAddress.message}
-                    </span>
-                  )}
-                </div>
-              </FormStep>
-            )}
-
-            {currentStep.id === 'payment' && (
-              <FormStep title="Payment">
-                <div>
-                  <label htmlFor="paymentMethod">Payment method</label>
-                  <select
-                    id="paymentMethod"
-                    {...form.register('paymentMethod')}
-                  >
-                    <option value="card">Credit card</option>
-                    <option value="paypal">PayPal</option>
-                  </select>
-                </div>
-
-                <ConditionalField
-                  condition={{ watchField: 'paymentMethod', operator: 'eq', value: 'card' }}
-                  unregisterOnHide
-                >
-                  <div>
-                    <label htmlFor="cardNumber">Card number</label>
-                    <input
-                      id="cardNumber"
-                      aria-describedby={errors.cardNumber ? 'card-error' : undefined}
-                      {...form.register('cardNumber', { required: 'Card number is required' })}
-                    />
-                    {errors.cardNumber && (
-                      <span id="card-error" role="alert">
-                        {errors.cardNumber.message}
-                      </span>
-                    )}
-                  </div>
-                </ConditionalField>
-              </FormStep>
-            )}
-
-            <div>
-              {!wizardState.isFirstStep && (
-                <button type="button" onClick={previous}>
-                  Back
-                </button>
-              )}
-              {!wizardState.isLastStep ? (
-                <button type="button" onClick={() => next()}>
-                  Next
-                </button>
-              ) : (
-                <button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Placing order...' : 'Place order'}
-                </button>
-              )}
-            </div>
-          </>
-        );
-      }}
+          <div>
+            {!wizardState.isFirstStep && <button type="button" onClick={previous}>Back</button>}
+            {!wizardState.isLastStep
+              ? <button type="button" onClick={() => next()}>Next</button>
+              : <button type="submit">Place order</button>}
+          </div>
+        </>
+      )}
     </FormWizard>
   );
 }
@@ -194,28 +112,6 @@ export function CheckoutWizard() {
 ---
 
 ## Architecture
-
-```mermaid
-graph TD
-    FW["FormWizard\n(form provider + submit)"]
-    UFW["useFormWizard\n(step state + navigation)"]
-    RHF["react-hook-form\nUseFormReturn<T>"]
-    FS["FormStep\n(section wrapper)"]
-    CF["ConditionalField\n(watch + evaluate)"]
-    UAV["useAsyncValidation\n(debounce + cancel)"]
-    Types["types/index.ts\n(shared contracts)"]
-
-    FW --> UFW
-    UFW --> RHF
-    FW --> FS
-    FW --> CF
-    CF --> RHF
-    UAV --> RHF
-    FW --> Types
-    CF --> Types
-    UAV --> Types
-    UFW --> Types
-```
 
 `FormWizard` is a thin shell: it delegates all state to `useFormWizard`, which owns the step index and wraps react-hook-form. Components like `FormStep` and `ConditionalField` are structural primitives - they impose no validation logic of their own. The library sits entirely above react-hook-form's API surface, so every RHF feature (rules, context, `useWatch`, `useFormContext`) remains available inside the render prop.
 
