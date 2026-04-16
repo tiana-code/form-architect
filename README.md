@@ -313,7 +313,7 @@ npm run build      # vite library build → dist/
 
 ## Release Status
 
-**0.1.0-alpha** - API is stabilising but not yet frozen. Minor versions may include breaking changes until `1.0.0`.
+**0.1.0** - API is stabilising but not yet frozen. Minor versions may include breaking changes until `1.0.0`.
 
 ---
 
